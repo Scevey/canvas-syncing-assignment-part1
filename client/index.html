@@ -5,70 +5,76 @@
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/babel" >
         "use strict";
-		let socket;
-		let users = {};
-		let hash;
-        let myScoreElem;
-		let totalScore;
-		  const update = (data) => {
-		  console.log('received');  
-          if(!users[data.hash]) {
-            users[data.hash] = data;
+		let canvas;
+        let ctx;
+        //our websocket connection
+        let socket; 
+		let draws = {};
+		const setCalls = () =>{
+			var time = new Date().getTime();
+			draws[time] = {x:100, y:100, width: 50, height: 50};
+			var xCoord = Math.floor((Math.random() * 400) + 1);
+			var yCoord = Math.floor((Math.random() * 400) + 1);
+			time = new Date().getTime();
+			var coords = {x: xCoord, y:yCoord, width: 50, height: 50};
+			socket.emit('draw', {time: time, coords: coords});
+	   }
 
-            return;
-          }
-          
-          if(users[data.hash].lastUpdate >= data.lastUpdate) {
-            return;
-          }
+        
+        //redraw our square to the screen
+       const draw = () => {
+            ctx.clearRect(0, 0,400,400);
+            //draw our updated square
+			var keys = Object.keys(draws);
+			for(var i=0; i < keys.length; i++)
+			{
+				if(i == 0){
+				ctx.fillStyle = "red";
+				}
+				else{
+				ctx.fillStyle = "black";
+				}
+				var drawCall = draws[keys[i]];
+				ctx.fillRect(drawCall.x, drawCall.y, drawCall.width, drawCall.height);
+			}
 
-          const user = users[data.hash];
-          user.lastUpdate = data.lastUpdate;
-          user.score = data.score;
-		  let total = parseInt(totalScore.innerText)+ 10;
-			totalScore.innerText = total;
-			let score =  parseInt(myScoreElem.innerText) + 10;
-			myScoreElem.innerText = score;
-        };
-        const send = () =>{
-		console.log('sent');
-		 socket.emit('scoreUpdate', users[hash])
-		};
-      const removeUser = (hash) => {
-          if(users[hash]) {
-            delete users[hash];
-          }
-        };
-        const setUser = (data) => {
-          hash = data.hash;
-          users[hash] = data;
-        };
-        const init = () =>{
-            totalScore = document.querySelector("#totalScore"); //total score element
-            myScoreElem = document.querySelector("#myScore"); //personal score element
-            totalScore.innerText = "0"; //default text for page
+        }
+        
+        //when a message is received from the server
+        //update our square to match the server's response
+        const handleMessage = (data) => {
 
+            draws = data;
+			draw();
+        }
+
+        const init = () => {
+            canvas = document.querySelector("#canvas");
+            ctx = canvas.getContext("2d");
+        
             //Connect to our server (io added automatically by socket.io when embedding it in the HTTP app on the server side)
             //This will return a new websocket connection. Every call to io.connect will return a new websocket connection 
+            //BUT not necessarily close the existing one. 
+            //You can absolutely use multiple websockets on the client, but you have to manage which ones are listening to which
+            //messages. In cases like this, you only need one. 
             socket = io.connect();
             
+            //When the socket connects successfully
             socket.on('connect', function () {
-              setInterval(send, 1000);
-            });  
+                //start our automated messages to the server every second. 
+                //This is just to show communication. Again, normally this would be invoked by a user action, not automated
+                setCalls();
+            });      
             
-            socket.on('joined', setUser);
-            
-            socket.on('updateScore', update);
-			   socket.on('left', removeUser);
-        };
+            //When our socket receives 'updatedMovement' messages from the server, call our update function
+            socket.on('draw', handleMessage);
+        }
 
       window.onload = init;
     </script>
 </head>
 <body> 
-	<h2>TIME FOR A NEXT LEVEL USER EXPERIENCE</h2>
-    <h2>Total Score Generated: <span id="totalScore"></span></h2>
-    <h2>Your Contribution: <span id="myScore">0</span></h2>
+    <canvas id="canvas" height="500" width="500">Please use an HTML 5 browser</canvas>
 </body>
 </html>
 </html>

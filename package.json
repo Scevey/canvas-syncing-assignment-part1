@@ -1,11 +1,11 @@
 {
-  "name": "TextUpdates",
+  "name": "DrawStack",
   "version": "1.0.0",
   "engines": {
     "node": "7.1.0",
     "npm": "3.10.x"
   },
-  "description": "updating text",
+  "description": "add to draw stack",
   "main": "./src/index.js",
   "scripts": {
     "start": "node ./src/server.js",
