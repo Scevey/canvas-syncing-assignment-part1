@@ -1,13 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script type="text/babel" >
         "use strict";
-    
+		let socket;
+		let users = {};
+		let hash;
+        let myScoreElem;
+		let totalScore;
+		  const update = (data) => {
+		  console.log('received');  
+          if(!users[data.hash]) {
+            users[data.hash] = data;
+
+            return;
+          }
+          
+          if(users[data.hash].lastUpdate >= data.lastUpdate) {
+            return;
+          }
+
+          const user = users[data.hash];
+          user.lastUpdate = data.lastUpdate;
+          user.score = data.score;
+		  let total = parseInt(totalScore.innerText)+ 10;
+			totalScore.innerText = total;
+			let score =  parseInt(myScoreElem.innerText) + 10;
+			myScoreElem.innerText = score;
+        };
+        const send = () =>{
+		console.log('sent');
+		 socket.emit('scoreUpdate', users[hash])
+		};
+      const removeUser = (hash) => {
+          if(users[hash]) {
+            delete users[hash];
+          }
+        };
+        const setUser = (data) => {
+          hash = data.hash;
+          users[hash] = data;
+        };
+        const init = () =>{
+            totalScore = document.querySelector("#totalScore"); //total score element
+            myScoreElem = document.querySelector("#myScore"); //personal score element
+            totalScore.innerText = "0"; //default text for page
+
+            //Connect to our server (io added automatically by socket.io when embedding it in the HTTP app on the server side)
+            //This will return a new websocket connection. Every call to io.connect will return a new websocket connection 
+            socket = io.connect();
+            
+            socket.on('connect', function () {
+              setInterval(send, 1000);
+            });  
+            
+            socket.on('joined', setUser);
+            
+            socket.on('updateScore', update);
+			   socket.on('left', removeUser);
+        };
+
+      window.onload = init;
     </script>
 </head>
-<body>
-
+<body> 
+	<h2>TIME FOR A NEXT LEVEL USER EXPERIENCE</h2>
+    <h2>Total Score Generated: <span id="totalScore"></span></h2>
+    <h2>Your Contribution: <span id="myScore">0</span></h2>
 </body>
+</html>
 </html>
