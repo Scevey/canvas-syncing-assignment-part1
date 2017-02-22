@@ -38,8 +38,8 @@ io.on('connection', (sock) => {
     socket.user = data;
     socket.user.lastUpdate = Date.now();
     socket.user.score += 10;
-    socket.emit('updateScore', socket.user);
-    socket.broadcast.to('room1').emit('updateScore', socket.user);
+    //socket.emit('updateScore', socket.user);
+    io.sockets.in('room1').emit('updateScore', socket.user);
   });
 
   socket.on('disconnect', () => {
